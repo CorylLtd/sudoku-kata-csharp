@@ -73,7 +73,7 @@ namespace SudokuSolver
 
         private int GetOffset(int row, int col) => row * GridSize + col;
 
-        private int GetValue(int row, int col) => Values[GetOffset(row, col)];
+        private bool IsEmpty(int row, int col) => Values[GetOffset(row, col)] == 0;
 
         /// <summary>
         /// Get all the potential moves that can be made at the given square
@@ -104,7 +104,7 @@ namespace SudokuSolver
             {
                 for (int col = 0; col < GridSize; col++)
                 {
-                    if (GetValue(row, col) == 0)
+                    if (IsEmpty(row, col))
                     {
                         possibleMoves.Add(GetPotentialMove(row, col));
                     }

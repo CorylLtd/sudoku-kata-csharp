@@ -11,6 +11,17 @@ namespace SudokuSolver
 
         private int BlockSize => (int) Math.Floor(Math.Sqrt(GridSize));
 
+        /// <summary>
+        /// Determine if this grid is solved
+        /// </summary>
+        public bool IsSolved => Values.All(n => n > 0);
+
+        /// <summary>
+        /// Produce a clone of this grid, with one new move made
+        /// </summary>
+        /// <param name="row">Index of row for new move</param>
+        /// <param name="col">Index of col for new move</param>
+        /// <param name="newValue">New move value</param>
         public Grid VaryGrid(int row, int col, int newValue)
         {
             var newValues = (int[]) Values.Clone();
@@ -18,7 +29,7 @@ namespace SudokuSolver
             return new Grid(newValues);
         }
 
-        public StringBuilder Display()
+        public override string ToString()
         {
             var sb = new StringBuilder();
             for (int i = 0; i < GridSize; i++)
@@ -26,17 +37,30 @@ namespace SudokuSolver
                 sb.AppendLine(string.Join(' ', Values.Skip(i * GridSize).Take(GridSize)));
             }
 
-            return sb;
+            return sb.ToString();
         }
 
-        public Vector Row(int index) => new(Values.Skip(index * GridSize).Take(GridSize).ToArray());
+        /// <summary>
+        /// Get all the numbers in a row
+        /// </summary>
+        /// <param name="index">Index of the row</param>
+        private Vector Row(int index) => new(Values.Skip(index * GridSize).Take(GridSize).ToArray());
 
-        public Vector Column(int index) => new(Values.Where((_, i) => i % GridSize == index).ToArray());
+        /// <summary>
+        /// Get all the numbers in a column
+        /// </summary>
+        /// <param name="index">Index of the column</param>
+        private Vector Column(int index) => new(Values.Where((_, i) => i % GridSize == index).ToArray());
 
-        public Vector Block(int row, int col)
+        /// <summary>
+        /// Get all the numbers in a block
+        /// </summary>
+        /// <param name="row">Row index of a cell in the block</param>
+        /// <param name="col">Column index of a cell in the block</param>
+        private Vector Block(int row, int col)
         {
-            row *= BlockSize;
-            col *= BlockSize;
+            row -= row % BlockSize;
+            col -= col % BlockSize;
             var result = new List<int>();
             for (int i = 0; i < BlockSize; i++)
             {
@@ -44,41 +68,45 @@ namespace SudokuSolver
                 result.AddRange(Values.Skip(offset).Take(BlockSize));
             }
 
-            return new(result.ToArray());
+            return new(result);
         }
 
         private int GetOffset(int row, int col) => row * GridSize + col;
-        public int GetSquare(int row, int col) => Values[GetOffset(row, col)];
-        public void SetSquare(int row, int col, int value) => Values[GetOffset(row, col)] = value;
-        public bool IsFull => Values.All(n => n > 0);
 
-        public Move PotentialMove(int row, int col)
+        private int GetValue(int row, int col) => Values[GetOffset(row, col)];
+
+        /// <summary>
+        /// Get all the potential moves that can be made at the given square
+        /// </summary>
+        /// <param name="row">Row index of the given square</param>
+        /// <param name="col">Column index of the given square</param>
+        private Move GetPotentialMove(int row, int col)
         {
-            var possibleValues = new int[GridSize];
-            for (int i = 0; i < GridSize; i++)
-            {
-                possibleValues[i] = i + 1;
-            }
-
             var rowValues = Row(row);
             var colValues = Column(col);
-            var blockValues = Block(row / BlockSize, col / BlockSize);
-            return new Move(row, col, possibleValues
-                .Where(v =>
-                    !rowValues.HasValue(v) && !colValues.HasValue(v) && !blockValues.HasValue(v))
-                .ToArray());
+            var blockValues = Block(row, col);
+            var possibleValues = Enumerable.Range(1, GridSize)
+                .Where(v => !rowValues.HasValue(v) && !colValues.HasValue(v) && !blockValues.HasValue(v))
+                .ToArray();
+            
+            return new Move(row, col, possibleValues);
         }
 
-        public Move NextPotentialMove()
+        /// <summary>
+        /// Get the next move by looking at all the squares and determining which
+        /// square has the fewest possible values
+        /// </summary>
+        /// <returns></returns>
+        public Move GetNextPotentialMove()
         {
             var possibleMoves = new List<Move>();
             for (int row = 0; row < GridSize; row++)
             {
                 for (int col = 0; col < GridSize; col++)
                 {
-                    if (GetSquare(row, col) == 0)
+                    if (GetValue(row, col) == 0)
                     {
-                        possibleMoves.Add(PotentialMove(row, col));
+                        possibleMoves.Add(GetPotentialMove(row, col));
                     }
                 }
             }

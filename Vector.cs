@@ -1,9 +1,10 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace SudokuSolver
 {
-    public sealed record Vector(int[] Values)
+    public sealed record Vector(IEnumerable<int> Values)
     {
         private bool PrintMembers(StringBuilder builder)
         {
